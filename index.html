@@ -45,16 +45,17 @@
 
     <div class="card">
         <h2>Wayahe Ngopi</h2>
-        <p class="status-text">Verified by:Wong Keder</p>
-        
-        <button id="connectBtn" class="btn-connect">Connect Wallet</button>
+<p class="status-text">VERIFIED by: Wong Keder</p>
 
-                <div class="stats-box">
-            <div class="stats-row"><span>Current Rate</span> <span id="currentRate" class="stats-val">---</span></div>
-            <div class="stats-row"><span>Pool Liquidity</span> <span id="poolPercent" class="stats-val">---</span></div>
-            <div class="stats-row"><span>Token Balance</span> <span id="userBalance" class="stats-val">0 Abizh</span></div>
-            <div class="stats-row"><span>Koin Balance</span> <span id="nativeBalance" class="stats-val">0 BNB</span></div>
-        </div>
+<button id="connectBtn" class="btn-connect">Connect Wallet</button>
+
+<div class="stats-box">
+    <div class="stats-row"><span>Current Rate</span> <span id="currentRate" class="stats-val">---</span></div>
+    <div class="stats-row"><span>Pool Liquidity</span> <span id="poolPercent" class="stats-val">---</span></div>
+    <div class="stats-row"><span>Token Balance</span> <span id="userBalance" class="stats-val">0 Abizh</span></div>
+    <div class="stats-row"><span>Coin Balance</span> <span id="nativeBalance" class="stats-val">0 BNB</span></div>
+</div>
+
 
 
         <div class="input-group">
@@ -115,35 +116,36 @@
     }
 
         async function updateUI() {
-        if(!contract || !signer) return;
-        try {
-            const rate = await contract.getRate();
-            const addr = await signer.getAddress();
-            const bal = await contract.balanceOf(addr);
-            const poolBal = await contract.balanceOf(CONTRACT_ADDR);
-            
-            // MENGAMBIL SALDO KOIN JARINGAN (tBNB/BNB)
-            const nBal = await provider.getBalance(addr);
+    if(!contract || !signer) return;
+    try {
+        const rate = await contract.getRate();
+        const addr = await signer.getAddress();
+        const bal = await contract.balanceOf(addr);
+        const poolBal = await contract.balanceOf(CONTRACT_ADDR);
+        
+        // Mengambil saldo koin asli (BNB/tBNB)
+        const nBal = await provider.getBalance(addr);
 
-            // Perhitungan Pool (Asumsi target 75jt)
-            const poolPct = (parseFloat(ethers.utils.formatEther(poolBal)) / 75000000) * 100;
-            const rateNum = rate.toNumber();
+        const poolPct = (parseFloat(ethers.utils.formatEther(poolBal)) / 75000000) * 100;
+        const rateNum = rate.toNumber();
 
-            // UPDATE TAMPILAN KE LAYAR
-            document.getElementById('currentRate').innerText = `1 : ${rateNum.toLocaleString()}`;
-            document.getElementById('poolPercent').innerText = `${poolPct.toFixed(2)}%`;
-            document.getElementById('userBalance').innerText = `${parseFloat(ethers.utils.formatEther(bal)).toFixed(2)} ABIZH`;
-            
-            // Menampilkan saldo koin asli (Native) dengan 4 desimal
-            document.getElementById('nativeBalance').innerText = `${parseFloat(ethers.utils.formatEther(nBal)).toFixed(4)} Koin`;
+        // Update Tampilan sesuai Capture
+        document.getElementById('currentRate').innerText = `1 : ${rateNum.toLocaleString()}`;
+        document.getElementById('poolPercent').innerText = `${poolPct.toFixed(2)}%`;
+        
+        // Menampilkan Saldo Token
+        document.getElementById('userBalance').innerText = `${parseFloat(ethers.utils.formatEther(bal)).toFixed(2)} Abizh`;
+        
+        // Menampilkan Saldo BNB
+        document.getElementById('nativeBalance').innerText = `${parseFloat(ethers.utils.formatEther(nBal)).toFixed(4)} BNB`;
 
-            updateChart(rateNum);
-        } catch (e) { 
-            console.error("Sync Error", e);
-            // Jika OKX terputus, coba re-inisialisasi signer
-            signer = provider.getSigner();
-        }
+        updateChart(rateNum);
+    } catch (e) { 
+        console.error("Sync Error", e);
+        signer = provider.getSigner();
     }
+}
+
 
 
     function updateChart(rate) {
