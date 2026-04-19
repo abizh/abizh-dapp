@@ -44,27 +44,29 @@
     </div>
 
     <div class="card">
-        <h2>ABIZHARD Ecosystem</h2>
+        <h2>Wayahe Ngopi</h2>
         <p class="status-text">Verified Secure Contract</p>
         
         <button id="connectBtn" class="btn-connect">Connect Wallet</button>
 
-        <div class="stats-box">
+                <div class="stats-box">
             <div class="stats-row"><span>Current Rate</span> <span id="currentRate" class="stats-val">---</span></div>
             <div class="stats-row"><span>Pool Liquidity</span> <span id="poolPercent" class="stats-val">---</span></div>
-            <div class="stats-row"><span>Your Balance</span> <span id="userBalance" class="stats-val">0 ABIZH</span></div>
+            <div class="stats-row"><span>Your ABIZH Balance</span> <span id="userBalance" class="stats-val">0 ABIZH</span></div>
+            <div class="stats-row"><span>Your Native Balance</span> <span id="nativeBalance" class="stats-val">0 Koin</span></div>
         </div>
 
+
         <div class="input-group">
-            <label>BUY ABIZH (Pay Koin)</label>
+            <label>BNB</label>
             <input type="number" id="buyAmount" placeholder="Amount (e.g. 0.1)">
-            <button id="buyBtn" class="btn-buy" disabled>Execute Buy</button>
+            <button id="buyBtn" class="btn-buy" disabled>BELI</button>
         </div>
 
         <div class="input-group">
-            <label>SELL ABIZH (Auto-Redeem)</label>
+            <label>ABIZH</label>
             <input type="number" id="sellAmount" placeholder="Amount ABIZH">
-            <button id="sellBtn" class="btn-sell" disabled>Execute Sell</button>
+            <button id="sellBtn" class="btn-sell" disabled>JUAL</button>
         </div>
     </div>
 </div>
@@ -112,25 +114,37 @@
         });
     }
 
-    async function updateUI() {
-        if(!contract) return;
+        async function updateUI() {
+        if(!contract || !signer) return;
         try {
             const rate = await contract.getRate();
             const addr = await signer.getAddress();
             const bal = await contract.balanceOf(addr);
             const poolBal = await contract.balanceOf(CONTRACT_ADDR);
+            
+            // MENGAMBIL SALDO KOIN JARINGAN (tBNB/BNB)
+            const nBal = await provider.getBalance(addr);
 
-            // Calculation
+            // Perhitungan Pool (Asumsi target 75jt)
             const poolPct = (parseFloat(ethers.utils.formatEther(poolBal)) / 75000000) * 100;
             const rateNum = rate.toNumber();
 
+            // UPDATE TAMPILAN KE LAYAR
             document.getElementById('currentRate').innerText = `1 : ${rateNum.toLocaleString()}`;
             document.getElementById('poolPercent').innerText = `${poolPct.toFixed(2)}%`;
             document.getElementById('userBalance').innerText = `${parseFloat(ethers.utils.formatEther(bal)).toFixed(2)} ABIZH`;
+            
+            // Menampilkan saldo koin asli (Native) dengan 4 desimal
+            document.getElementById('nativeBalance').innerText = `${parseFloat(ethers.utils.formatEther(nBal)).toFixed(4)} Koin`;
 
             updateChart(rateNum);
-        } catch (e) { console.error("Sync Error", e); }
+        } catch (e) { 
+            console.error("Sync Error", e);
+            // Jika OKX terputus, coba re-inisialisasi signer
+            signer = provider.getSigner();
+        }
     }
+
 
     function updateChart(rate) {
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
