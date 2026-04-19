@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abizhard (ABIZH) - Digital Ecosystem</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --gold: #f3ba2f; --dark: #121212; --card: #1e1e1e; --green: #28a745; --red: #dc3545; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--dark); color: white; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 950px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .card { background: var(--card); padding: 25px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); border: 1px solid #333; position: relative; overflow: hidden; }
+        .card::before { content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--gold); }
+        h2 { text-align: center; color: var(--gold); margin: 0 0 5px 0; font-size: 1.5em; letter-spacing: 1.5px; }
+        .status-text { text-align: center; font-size: 0.8em; color: #888; margin-bottom: 25px; text-transform: uppercase; }
+        .stats-box { background: #252525; padding: 15px; border-radius: 12px; margin-bottom: 25px; }
+        .stats-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #333; font-size: 0.95em; }
+        .stats-row:last-child { border: none; }
+        .stats-val { font-weight: bold; color: var(--gold); }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-size: 0.85em; color: var(--gold); margin-bottom: 8px; font-weight: 600; }
+        input { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #444; background: #2b2b2b; color: white; font-size: 1em; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--gold); box-shadow: 0 0 8px rgba(243, 186, 47, 0.2); }
+        button { width: 100%; padding: 15px; border-radius: 10px; border: none; font-weight: 800; cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-connect { background: var(--gold); color: black; margin-bottom: 20px; }
+        .btn-buy { background: var(--green); color: white; }
+        .btn-sell { background: var(--red); color: white; margin-top: 10px; }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        button:disabled { background: #555; cursor: not-allowed; transform: none; }
+        #chartContainer { height: 350px; width: 100%; }
+        @media (max-width: 600px) { padding: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>Market Analysis</h2>
+        <p class="status-text">ABIZH Price Trend (Real-Time)</p>
+        <div id="chartContainer">
+            <canvas id="priceChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>ABIZHARD Ecosystem</h2>
+        <p class="status-text">Verified Secure Contract</p>
+        
+        <button id="connectBtn" class="btn-connect">Connect Wallet</button>
+
+        <div class="stats-box">
+            <div class="stats-row"><span>Current Rate</span> <span id="currentRate" class="stats-val">---</span></div>
+            <div class="stats-row"><span>Pool Liquidity</span> <span id="poolPercent" class="stats-val">---</span></div>
+            <div class="stats-row"><span>Your Balance</span> <span id="userBalance" class="stats-val">0 ABIZH</span></div>
+        </div>
+
+        <div class="input-group">
+            <label>BUY ABIZH (Pay Koin)</label>
+            <input type="number" id="buyAmount" placeholder="Amount (e.g. 0.1)">
+            <button id="buyBtn" class="btn-buy" disabled>Execute Buy</button>
+        </div>
+
+        <div class="input-group">
+            <label>SELL ABIZH (Auto-Redeem)</label>
+            <input type="number" id="sellAmount" placeholder="Amount ABIZH">
+            <button id="sellBtn" class="btn-sell" disabled>Execute Sell</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const CONTRACT_ADDR = "0x54fc26c5e0E70b2a5FC307E715cfA95D2c815fE7";
+    const ABI = [
+        "function getRate() public view returns (uint256)",
+        "function balanceOf(address) public view returns (uint256)",
+        "function transfer(address to, uint256 amount) public returns (bool)",
+        "event Buy(address indexed buyer, uint256 ethSpent, uint256 tokensReceived)",
+        "event Sell(address indexed seller, uint256 tokensSold, uint256 ethReceived)"
+    ];
+
+    let provider, signer, contract, chart;
+    let priceData = [], labels = [];
+
+    // Initialize Chart.js
+    function initChart() {
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Rate (Tokens/1 Koin)',
+                    data: priceData,
+                    borderColor: '#f3ba2f',
+                    backgroundColor: 'rgba(243, 186, 47, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { reverse: true, grid: { color: '#333' }, ticks: { color: '#888' } },
+                    x: { grid: { display: false }, ticks: { color: '#888' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    async function updateUI() {
+        if(!contract) return;
+        try {
+            const rate = await contract.getRate();
+            const addr = await signer.getAddress();
+            const bal = await contract.balanceOf(addr);
+            const poolBal = await contract.balanceOf(CONTRACT_ADDR);
+
+            // Calculation
+            const poolPct = (parseFloat(ethers.utils.formatEther(poolBal)) / 75000000) * 100;
+            const rateNum = rate.toNumber();
+
+            document.getElementById('currentRate').innerText = `1 : ${rateNum.toLocaleString()}`;
+            document.getElementById('poolPercent').innerText = `${poolPct.toFixed(2)}%`;
+            document.getElementById('userBalance').innerText = `${parseFloat(ethers.utils.formatEther(bal)).toFixed(2)} ABIZH`;
+
+            updateChart(rateNum);
+        } catch (e) { console.error("Sync Error", e); }
+    }
+
+    function updateChart(rate) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if(labels[labels.length-1] === time && priceData[priceData.length-1] === rate) return;
+        
+        labels.push(time);
+        priceData.push(rate);
+        if(labels.length > 12) { labels.shift(); priceData.shift(); }
+        chart.update();
+    }
+
+    async function handleConnect() {
+        if(!window.ethereum) return alert("Please install Metamask!");
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
+        
+        document.getElementById('connectBtn').innerText = "Wallet Connected";
+        document.getElementById('buyBtn').disabled = false;
+        document.getElementById('sellBtn').disabled = false;
+        updateUI();
+        
+        // Listen to Events
+        contract.on("Buy", updateUI);
+        contract.on("Sell", updateUI);
+    }
+
+    async function doBuy() {
+        const val = document.getElementById('buyAmount').value;
+        if(!val) return;
+        try {
+            const tx = await signer.sendTransaction({
+                to: CONTRACT_ADDR,
+                value: ethers.utils.parseEther(val),
+                gasLimit: 150000
+            });
+            await tx.wait();
+            alert("Buy Success!");
+            updateUI();
+        } catch (e) { alert("Error: " + (e.reason || "Transaction Failed")); }
+    }
+
+    async function doSell() {
+        const val = document.getElementById('sellAmount').value;
+        if(!val) return;
+        try {
+            const amount = ethers.utils.parseUnits(val, 18);
+            const tx = await contract.transfer(CONTRACT_ADDR, amount, {
+                gasLimit: 200000
+            });
+            await tx.wait();
+            alert("Sell Success!");
+            updateUI();
+        } catch (e) { alert("Error: " + (e.reason || "Check Balance/Limit")); }
+    }
+
+    document.getElementById('connectBtn').onclick = handleConnect;
+    document.getElementById('buyBtn').onclick = doBuy;
+    document.getElementById('sellBtn').onclick = doSell;
+
+    window.onload = initChart;
+    setInterval(updateUI, 20000); // Auto sync every 20s
+</script>
+
+</body>
+  </html>
+  
