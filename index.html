@@ -83,7 +83,7 @@
                     <label>YOU PAY</label>
                     <div class="swap-input-row">
                         <input type="number" id="input-pay" placeholder="0.0" oninput="calculateReceive()">
-                        <div class="token-tag">🟡 BNB</div>
+                        <div class="token-tag">BNB</div>
                     </div>
                 </div>
                 <div class="divider"><span class="divider-icon">⇅</span></div>
@@ -91,7 +91,7 @@
                     <label>YOU RECEIVE (EST.)</label>
                     <div class="swap-input-row">
                         <input type="number" id="input-receive" placeholder="0.0" readonly>
-                        <div class="token-tag">💎 ABIZH</div>
+                        <div class="token-tag">ABIZH</div>
                     </div>
                 </div>
                 <div class="stats-row" style="margin-top: 20px; font-size: 0.75em;">
@@ -118,9 +118,9 @@
     </div>
 
     <nav class="bottom-nav">
-        <div class="nav-item active" onclick="navTo('wallet', this)"><i>🏠</i>Wallet</div>
-        <div class="nav-item" onclick="navTo('swap', this)"><i>🔄</i>Swap</div>
-        <div class="nav-item" onclick="navTo('send', this)"><i>✈️</i>Send</div>
+        <div class="nav-item active" onclick="navTo('wallet', this)"><i></i>WALLET</div>
+        <div class="nav-item" onclick="navTo('swap', this)"><i></i>SWAP</div>
+        <div class="nav-item" onclick="navTo('send', this)"><i></i>SEND</div>
     </nav>
 
 <script>
@@ -190,13 +190,22 @@
     }
 
     function calculateReceive() {
-        const payVal = document.getElementById('input-pay').value;
-        if (payVal && currentRate > 0) {
-            document.getElementById('input-receive').value = (payVal * currentRate).toFixed(2);
-        } else {
-            document.getElementById('input-receive').value = "";
-        }
+    const payVal = document.getElementById('input-pay').value;
+    if (payVal && currentRate > 0) {
+        const result = payVal * currentRate;
+        
+        // Format angka dengan pemisah ribuan (Locale 'en-US' menggunakan koma untuk ribuan dan titik untuk desimal)
+        const formattedResult = new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(result);
+        
+        document.getElementById('input-receive').value = formattedResult;
+    } else {
+        document.getElementById('input-receive').value = "";
     }
+}
+
 
     async function executeTrade() {
         const val = document.getElementById('input-pay').value;
