@@ -82,17 +82,15 @@
                 <div class="swap-box">
                     <label>YOU PAY</label>
                     <div class="swap-input-row">
-                        <input type="number" id="input-pay" placeholder="0.0" oninput="calculateReceive()">
-                        <div class="token-tag">BNB</div>
-                    </div>
-                </div>
-                <div class="divider"><span class="divider-icon">⇅</span></div>
-                <div class="swap-box">
-                    <label>YOU RECEIVE (EST.)</label>
-                    <div class="swap-input-row">
-                        <input type="number" id="input-receive" placeholder="0.0" readonly>
-                        <div class="token-tag">ABIZH</div>
-                    </div>
+    <input type="number" id="input-pay" placeholder="0.0" oninput="calculateReceive()">
+    <div class="token-tag">BNB</div>
+</div>
+
+<div class="swap-input-row">
+    <input type="text" id="input-receive" placeholder="0.0" readonly>
+    <div class="token-tag">ABIZH</div>
+</div>
+
                 </div>
                 <div class="stats-row" style="margin-top: 20px; font-size: 0.75em;">
                     <span>Current Rate</span> <span id="rate-display">1 BNB : --- ABIZH</span>
@@ -142,15 +140,13 @@
     }
 
     async function toggleConnect() {
-        if (userAddr) {
-            userAddr = null; signer = null; contract = null;
-            document.getElementById('connectBtn').innerText = "Connect Wallet";
-            document.getElementById('btnExecuteSwap').disabled = true;
-            document.getElementById('btnExecuteSend').disabled = true;
-            alert("Wallet Disconnected");
-            location.reload();
-            return;
-        }
+    // ... kode koneksi wallet ...
+    
+    if (userAddr) {
+        // Setelah berhasil konek, langsung jalankan updateData
+        await updateData(); 
+    }
+}
 
         if (!window.ethereum) return alert("Buka aplikasi ini di dalam browser MetaMask/OKX");
         
@@ -172,22 +168,56 @@
     }
 
     async function updateData() {
-        if (!contract || !userAddr) return;
-        try {
-            const rate = await contract.getRate();
-            currentRate = rate.toNumber();
-            const balToken = await contract.balanceOf(userAddr);
-            const balNative = await provider.getBalance(userAddr);
-            const poolBal = await contract.balanceOf(CONTRACT_ADDR);
+    if (!contract || !userAddr) return;
+    try {
+        // 1. Ambil data Rate dari Blockchain
+        const rate = await contract.getRate();
+        currentRate = rate.toNumber();
+        
+        // 2. Ambil data Saldo
+        const balToken = await contract.balanceOf(userAddr);
+        const balNative = await provider.getBalance(userAddr);
+        const poolBal = await contract.balanceOf(CONTRACT_ADDR);
 
-            document.getElementById('bal-token').innerText = `${parseFloat(ethers.utils.formatEther(balToken)).toFixed(2)} Abizh`;
-            document.getElementById('bal-native').innerText = `${parseFloat(ethers.utils.formatEther(balNative)).toFixed(4)} BNB`;
-            document.getElementById('pool-liq').innerText = `${((parseFloat(ethers.utils.formatEther(poolBal)) / 75000000) * 100).toFixed(2)}%`;
-            document.getElementById('rate-display').innerText = `1 BNB : ${currentRate.toLocaleString()} ABIZH`;
-            
-            calculateReceive();
-        } catch (e) { console.error("Sync Error:", e); }
+        // 3. Update Tampilan Angka di UI
+        document.getElementById('bal-token').innerText = `${parseFloat(ethers.utils.formatEther(balToken)).toFixed(2)} Abizh`;
+        document.getElementById('bal-native').innerText = `${parseFloat(ethers.utils.formatEther(balNative)).toFixed(4)} BNB`;
+        document.getElementById('pool-liq').innerText = `${((parseFloat(ethers.utils.formatEther(poolBal)) / 75000000) * 100).toFixed(2)}%`;
+        document.getElementById('rate-display').innerText = `1 BNB : ${currentRate.toLocaleString()} ABIZH`;
+        
+        // --- INI KUNCINYA ---
+        // Panggil kalkulasi otomatis setelah rate berhasil didapat
+        calculateReceive(); 
+        
+    } catch (e) { 
+        console.error("Gagal update data:", e); 
     }
+}
+
+function calculateReceive() {
+    const payInput = document.getElementById('input-pay');
+    const receiveInput = document.getElementById('input-receive');
+    
+    // Pastikan input pay dibaca sebagai angka
+    const payVal = parseFloat(payInput.value);
+
+    // Lakukan perkalian jika angka valid dan rate sudah ada
+    if (!isNaN(payVal) && payVal > 0 && currentRate > 0) {
+        const result = payVal * currentRate;
+        
+        // Format angka dengan pemisah ribuan (Locale en-US: 10,000.00)
+        const formattedResult = new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }).format(result);
+        
+        receiveInput.value = formattedResult;
+    } else {
+        // Jika input kosong atau nol, tampilkan 0.0
+        receiveInput.value = "0.0";
+    }
+}
+
 
     function calculateReceive() {
     const payInput = document.getElementById('input-pay');
