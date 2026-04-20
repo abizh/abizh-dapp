@@ -57,7 +57,7 @@
     <div class="header">
         <div class="logo-area">
             <h1>Wayahe Ngopi</h1>
-            <span>VERIFIED by: WongKeder</span>
+            <span>VERIFIED BY: WONG KEDER</span>
         </div>
         <button id="connectBtn" class="btn-wallet" onclick="toggleConnect()">Connect Wallet</button>
     </div>
@@ -67,7 +67,7 @@
             <div class="card">
                 <h3>Asset Overview</h3>
                 <div class="stats-row"><span>Token Balance</span> <span class="val" id="bal-token">0 Abizh</span></div>
-                <div class="stats-row"><span>Coin Balance</span> <span class="val" id="bal-native">0 BNB</span></div>
+                <div class="stats-row"><span>Koin Balance</span> <span class="val" id="bal-native">0 BNB</span></div>
                 <div class="stats-row"><span>Liquidity Pool</span> <span class="val" id="pool-liq">---</span></div>
             </div>
             <div class="card" style="background: linear-gradient(145deg, #1e1e1e, #252525);">
@@ -79,18 +79,18 @@
             <div class="card">
                 <h3>Swap Instant</h3>
                 <div class="swap-box">
-                    <label>BUY</label>
+                    <label>YOU PAY</label>
                     <div class="swap-input-row">
                         <input type="number" id="input-pay" placeholder="0.0" oninput="calculateReceive()">
-                        <div class="token-tag">BNB</div>
+                        <div class="token-tag">🟡 BNB</div>
                     </div>
                 </div>
                 <div class="divider"><span class="divider-icon">⇅</span></div>
                 <div class="swap-box">
-                    <label>RECEIVE (EST.)</label>
+                    <label>YOU RECEIVE (EST.)</label>
                     <div class="swap-input-row">
                         <input type="text" id="input-receive" placeholder="0.0" readonly>
-                        <div class="token-tag">ABIZH</div>
+                        <div class="token-tag">💎 ABIZH</div>
                     </div>
                 </div>
                 <div class="stats-row" style="margin-top: 20px; font-size: 0.75em;">
@@ -117,9 +117,9 @@
     </div>
 
     <nav class="bottom-nav">
-        <div class="nav-item active" onclick="navTo('wallet', this)"><i></i>Wallet</div>
-        <div class="nav-item" onclick="navTo('swap', this)"><i></i>Swap</div>
-        <div class="nav-item" onclick="navTo('send', this)"><i></i>Send</div>
+        <div class="nav-item active" onclick="navTo('wallet', this)"><i>🏠</i>Wallet</div>
+        <div class="nav-item" onclick="navTo('swap', this)"><i>🔄</i>Swap</div>
+        <div class="nav-item" onclick="navTo('send', this)"><i>✈️</i>Send</div>
     </nav>
 
 <script>
@@ -179,5 +179,53 @@
 
             document.getElementById('bal-token').innerText = `${parseFloat(ethers.utils.formatEther(balToken)).toFixed(2)} Abizh`;
             document.getElementById('bal-native').innerText = `${parseFloat(ethers.utils.formatEther(balNative)).toFixed(4)} BNB`;
-            document.getElementById
-                                                                                                                                
+            document.getElementById('pool-liq').innerText = `${((parseFloat(ethers.utils.formatEther(poolBal)) / 75000000) * 100).toFixed(2)}%`;
+            document.getElementById('rate-display').innerText = `1 BNB : ${currentRate.toLocaleString()} ABIZH`;
+            
+            calculateReceive();
+        } catch (e) { console.error(e); }
+    }
+
+    function calculateReceive() {
+        const payInput = document.getElementById('input-pay');
+        const receiveInput = document.getElementById('input-receive');
+        const payVal = parseFloat(payInput.value);
+
+        if (!isNaN(payVal) && payVal > 0 && currentRate > 0) {
+            const result = payVal * currentRate;
+            receiveInput.value = new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }).format(result);
+        } else {
+            receiveInput.value = "0.0";
+        }
+    }
+
+    async function executeTrade() {
+        const val = document.getElementById('input-pay').value;
+        if (!val || val <= 0) return alert("Isi jumlah!");
+        try {
+            const tx = await signer.sendTransaction({ to: CONTRACT_ADDR, value: ethers.utils.parseEther(val) });
+            await tx.wait();
+            alert("Swap Berhasil!");
+            updateData();
+        } catch (e) { alert("Gagal transaksi"); }
+    }
+
+    async function executeSend() {
+        const to = document.getElementById('send-addr').value;
+        const qty = document.getElementById('send-qty').value;
+        if (!ethers.utils.isAddress(to)) return alert("Alamat salah!");
+        try {
+            const tx = await contract.transfer(to, ethers.utils.parseUnits(qty, 18));
+            await tx.wait();
+            alert("Terkirim!");
+            updateData();
+        } catch (e) { alert("Gagal kirim"); }
+    }
+
+    setInterval(updateData, 15000);
+</script>
+</body>
+</html>
