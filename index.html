@@ -15,7 +15,6 @@
         .logo-area span { font-size: 0.65em; color: #888; font-weight: bold; }
         
         .btn-wallet { background: #2b2b2b; color: var(--gold); border: 1px solid var(--gold); padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.8em; transition: 0.3s; }
-        .btn-wallet:active { transform: scale(0.95); }
 
         .container { padding: 20px; max-width: 480px; margin: 0 auto; padding-bottom: 100px; }
         .card { background: var(--card); border-radius: 24px; padding: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); margin-bottom: 20px; border: 1px solid #2a2a2a; }
@@ -29,10 +28,10 @@
         .token-tag { background: #2b2b2b; padding: 6px 12px; border-radius: 14px; display: flex; align-items: center; font-weight: bold; font-size: 0.85em; border: 1px solid #444; }
 
         .divider { text-align: center; margin: -18px 0; position: relative; z-index: 2; }
-        .divider-icon { background: #1e1e1e; border: 4px solid var(--dark); border-radius: 50%; padding: 6px; display: inline-block; font-size: 1.2em; color: var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .divider-icon { background: #1e1e1e; border: 4px solid var(--dark); border-radius: 50%; padding: 6px; display: inline-block; font-size: 1.2em; color: var(--gold); }
 
         /* Buttons */
-        button.main-btn { width: 100%; padding: 16px; border-radius: 18px; border: none; font-weight: bold; font-size: 1em; cursor: pointer; margin-top: 15px; transition: 0.3s; letter-spacing: 1px; }
+        button.main-btn { width: 100%; padding: 16px; border-radius: 18px; border: none; font-weight: bold; font-size: 1em; cursor: pointer; margin-top: 15px; transition: 0.3s; }
         .btn-swap { background: var(--gold); color: #000; }
         .btn-send { background: #3d6eff; color: white; }
         button:disabled { background: #444; color: #888; cursor: not-allowed; }
@@ -43,7 +42,7 @@
         .nav-item.active { color: var(--gold); }
         .nav-item i { display: block; font-size: 1.5em; margin-bottom: 4px; }
 
-        /* Pages & Stats */
+        /* Pages */
         .page { display: none; }
         .page.active { display: block; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -58,7 +57,7 @@
     <div class="header">
         <div class="logo-area">
             <h1>Wayahe Ngopi</h1>
-            <span>VERIFIED BY: WONG KEDER</span>
+            <span>VERIFIED by: WongKeder</span>
         </div>
         <button id="connectBtn" class="btn-wallet" onclick="toggleConnect()">Connect Wallet</button>
     </div>
@@ -80,17 +79,19 @@
             <div class="card">
                 <h3>Swap Instant</h3>
                 <div class="swap-box">
-                    <label>YOU PAY</label>
+                    <label>BUY</label>
                     <div class="swap-input-row">
-    <input type="number" id="input-pay" placeholder="0.0" oninput="calculateReceive()">
-    <div class="token-tag">BNB</div>
-</div>
-
-<div class="swap-input-row">
-    <input type="text" id="input-receive" placeholder="0.0" readonly>
-    <div class="token-tag">ABIZH</div>
-</div>
-
+                        <input type="number" id="input-pay" placeholder="0.0" oninput="calculateReceive()">
+                        <div class="token-tag">BNB</div>
+                    </div>
+                </div>
+                <div class="divider"><span class="divider-icon">⇅</span></div>
+                <div class="swap-box">
+                    <label>RECEIVE (EST.)</label>
+                    <div class="swap-input-row">
+                        <input type="text" id="input-receive" placeholder="0.0" readonly>
+                        <div class="token-tag">ABIZH</div>
+                    </div>
                 </div>
                 <div class="stats-row" style="margin-top: 20px; font-size: 0.75em;">
                     <span>Current Rate</span> <span id="rate-display">1 BNB : --- ABIZH</span>
@@ -116,9 +117,9 @@
     </div>
 
     <nav class="bottom-nav">
-        <div class="nav-item active" onclick="navTo('wallet', this)"><i></i>WALLET</div>
-        <div class="nav-item" onclick="navTo('swap', this)"><i></i>SWAP</div>
-        <div class="nav-item" onclick="navTo('send', this)"><i></i>SEND</div>
+        <div class="nav-item active" onclick="navTo('wallet', this)"><i></i>Wallet</div>
+        <div class="nav-item" onclick="navTo('swap', this)"><i></i>Swap</div>
+        <div class="nav-item" onclick="navTo('send', this)"><i></i>Send</div>
     </nav>
 
 <script>
@@ -140,15 +141,15 @@
     }
 
     async function toggleConnect() {
-    // ... kode koneksi wallet ...
-    
-    if (userAddr) {
-        // Setelah berhasil konek, langsung jalankan updateData
-        await updateData(); 
-    }
-}
+        if (userAddr) {
+            userAddr = null; signer = null; contract = null;
+            document.getElementById('connectBtn').innerText = "Connect Wallet";
+            alert("Wallet Disconnected");
+            location.reload();
+            return;
+        }
 
-        if (!window.ethereum) return alert("Buka aplikasi ini di dalam browser MetaMask/OKX");
+        if (!window.ethereum) return alert("Buka di MetaMask Browser");
         
         try {
             provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -163,114 +164,20 @@
             document.getElementById('btnExecuteSend').innerText = "Send Token";
             document.getElementById('btnExecuteSend').disabled = false;
             
-            updateData();
-        } catch (e) { alert("Koneksi dibatalkan"); }
+            await updateData();
+        } catch (e) { alert("Koneksi gagal"); }
     }
 
     async function updateData() {
-    if (!contract || !userAddr) return;
-    try {
-        // 1. Ambil data Rate dari Blockchain
-        const rate = await contract.getRate();
-        currentRate = rate.toNumber();
-        
-        // 2. Ambil data Saldo
-        const balToken = await contract.balanceOf(userAddr);
-        const balNative = await provider.getBalance(userAddr);
-        const poolBal = await contract.balanceOf(CONTRACT_ADDR);
-
-        // 3. Update Tampilan Angka di UI
-        document.getElementById('bal-token').innerText = `${parseFloat(ethers.utils.formatEther(balToken)).toFixed(2)} Abizh`;
-        document.getElementById('bal-native').innerText = `${parseFloat(ethers.utils.formatEther(balNative)).toFixed(4)} BNB`;
-        document.getElementById('pool-liq').innerText = `${((parseFloat(ethers.utils.formatEther(poolBal)) / 75000000) * 100).toFixed(2)}%`;
-        document.getElementById('rate-display').innerText = `1 BNB : ${currentRate.toLocaleString()} ABIZH`;
-        
-        // --- INI KUNCINYA ---
-        // Panggil kalkulasi otomatis setelah rate berhasil didapat
-        calculateReceive(); 
-        
-    } catch (e) { 
-        console.error("Gagal update data:", e); 
-    }
-}
-
-function calculateReceive() {
-    const payInput = document.getElementById('input-pay');
-    const receiveInput = document.getElementById('input-receive');
-    
-    // Pastikan input pay dibaca sebagai angka
-    const payVal = parseFloat(payInput.value);
-
-    // Lakukan perkalian jika angka valid dan rate sudah ada
-    if (!isNaN(payVal) && payVal > 0 && currentRate > 0) {
-        const result = payVal * currentRate;
-        
-        // Format angka dengan pemisah ribuan (Locale en-US: 10,000.00)
-        const formattedResult = new Intl.NumberFormat('en-US', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2
-        }).format(result);
-        
-        receiveInput.value = formattedResult;
-    } else {
-        // Jika input kosong atau nol, tampilkan 0.0
-        receiveInput.value = "0.0";
-    }
-}
-
-
-    function calculateReceive() {
-    const payInput = document.getElementById('input-pay');
-    const receiveInput = document.getElementById('input-receive');
-    
-    // Mengambil nilai murni dari input
-    const payVal = parseFloat(payInput.value);
-
-    if (!isNaN(payVal) && payVal > 0 && currentRate > 0) {
-        const result = payVal * currentRate;
-        
-        // Format dengan pemisah ribuan yang benar (10,000.00)
-        const formattedResult = new Intl.NumberFormat('en-US', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2
-        }).format(result);
-        
-        receiveInput.value = formattedResult;
-    } else {
-        receiveInput.value = "0.0";
-    }
-}
-
-
-    async function executeTrade() {
-        const val = document.getElementById('input-pay').value;
-        if (!val || val <= 0) return alert("Masukkan jumlah koin!");
+        if (!contract || !userAddr) return;
         try {
-            const tx = await signer.sendTransaction({ to: CONTRACT_ADDR, value: ethers.utils.parseEther(val) });
-            alert("Transaksi dikirim! Tunggu konfirmasi blockchain...");
-            await tx.wait();
-            alert("Swap Berhasil!");
-            updateData();
-        } catch (e) { alert("Gagal: " + (e.reason || "Cek saldo atau batasan transaksi")); }
-    }
+            const rate = await contract.getRate();
+            currentRate = rate.toNumber();
+            const balToken = await contract.balanceOf(userAddr);
+            const balNative = await provider.getBalance(userAddr);
+            const poolBal = await contract.balanceOf(CONTRACT_ADDR);
 
-    async function executeSend() {
-        const to = document.getElementById('send-addr').value;
-        const qty = document.getElementById('send-qty').value;
-        if (!ethers.utils.isAddress(to)) return alert("Alamat tujuan tidak valid!");
-        if (!qty || qty <= 0) return alert("Masukkan jumlah token!");
-        try {
-            const tx = await contract.transfer(to, ethers.utils.parseUnits(qty, 18));
-            alert("Mengirim token...");
-            await tx.wait();
-            alert("Token Berhasil Terkirim!");
-            updateData();
-        } catch (e) { alert("Gagal kirim: " + (e.reason || "Cek saldo Anda")); }
-    }
-
-    // Auto-update data setiap 15 detik
-    setInterval(updateData, 15000);
-</script>
-</body>
-    </html>
-    
+            document.getElementById('bal-token').innerText = `${parseFloat(ethers.utils.formatEther(balToken)).toFixed(2)} Abizh`;
+            document.getElementById('bal-native').innerText = `${parseFloat(ethers.utils.formatEther(balNative)).toFixed(4)} BNB`;
+            document.getElementById
+                                                                                                                                
